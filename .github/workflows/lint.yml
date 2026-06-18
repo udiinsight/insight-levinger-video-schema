@@ -1,0 +1,60 @@
+name: Lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  php-syntax:
+    runs-on: ubuntu-latest
+    name: PHP Syntax Check
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+
+      - name: PHP syntax check (lint)
+        run: |
+          find . -type f -name "*.php" \
+            -not -path "./vendor/*" \
+            -not -path "./node_modules/*" \
+            -print0 | xargs -0 -n1 -P4 php -l
+
+  wpcs:
+    runs-on: ubuntu-latest
+    name: WordPress Coding Standards
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP with PHPCS
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          tools: cs2pr, phpcs
+
+      - name: Install WordPress Coding Standards
+        run: |
+          composer global require --dev wp-coding-standards/wpcs:"^3.0" \
+            phpcsstandards/phpcsutils:"^1.0" \
+            phpcsstandards/phpcsextra:"^1.0" \
+            dealerdirect/phpcodesniffer-composer-installer:"^1.0"
+          echo "$HOME/.composer/vendor/bin" >> $GITHUB_PATH
+
+      - name: Run PHPCS (WordPress + WordPress-Extra)
+        run: |
+          # Fail on errors (security, escaping, i18n, tabs, prefixes); cosmetic
+          # warnings (alignment, doc formatting) are advisory only, since this
+          # repo is authored without a local phpcbf to auto-format.
+          phpcs --standard=WordPress \
+                --extensions=php \
+                --warning-severity=0 \
+                --ignore=*/vendor/*,*/node_modules/* \
+                --report=full \
+                --colors \
+                .
+        continue-on-error: false
