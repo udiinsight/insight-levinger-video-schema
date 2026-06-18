@@ -3,7 +3,7 @@
  * Plugin Name: Insight - Levinger - Video Schema
  * Plugin URI: https://github.com/udiinsight/insight-levinger-video-schema
  * Description: Outputs consultant-supplied VideoObject JSON-LD (stored per post in an ACF repeater) in the document head, alongside Yoast SEO.
- * Version: 1.0.0
+ * Version: 1.1.0
  * Author: Insight Marketing
  * Author URI: https://insight-marketing.co.il
  * Text Domain: insight-levinger-video-schema
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'INSIGHT_LEVINGER_VIDEO_SCHEMA_VERSION', '1.0.0' );
+define( 'INSIGHT_LEVINGER_VIDEO_SCHEMA_VERSION', '1.1.0' );
 define( 'INSIGHT_LEVINGER_VIDEO_SCHEMA_PATH', plugin_dir_path( __FILE__ ) );
 define( 'INSIGHT_LEVINGER_VIDEO_SCHEMA_URL', plugin_dir_url( __FILE__ ) );
 
@@ -35,22 +35,29 @@ add_action( 'plugins_loaded', 'insight_levinger_video_schema_load_textdomain' );
 /**
  * Resolve the post types that should carry the video-schema field and output.
  *
- * Defaults to every public post type except pages and attachments, which covers
- * articles (post) plus custom types such as treatments and doctors without
- * hard-coding their slugs. Filter to narrow the list to specific slugs.
+ * Targets the content types that carry consultant-supplied video schema: posts,
+ * pages, and the procedure / medical-center / movie / doctor / sector CPTs.
+ * Filter to add or remove slugs.
  *
  * @return string[] List of post type slugs.
  */
 function insight_levinger_video_schema_post_types() {
-	$post_types = get_post_types( array( 'public' => true ), 'names' );
-	$post_types = array_diff( $post_types, array( 'page', 'attachment' ) );
+	$post_types = array(
+		'post',
+		'page',
+		'procedure',
+		'medical-center',
+		'movie',
+		'doctor',
+		'sector',
+	);
 
 	/**
 	 * Filters the post types that expose the video-schema field and front-end output.
 	 *
 	 * @param string[] $post_types List of post type slugs.
 	 */
-	$post_types = apply_filters( 'insight_levinger_video_schema_post_types', array_values( $post_types ) );
+	$post_types = apply_filters( 'insight_levinger_video_schema_post_types', $post_types );
 
 	return array_values( array_unique( array_filter( (array) $post_types ) ) );
 }

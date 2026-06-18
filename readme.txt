@@ -4,7 +4,7 @@ Tags: schema, seo, video, json-ld, structured-data
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: Proprietary
 License URI: https://insight-marketing.co.il
 
@@ -23,13 +23,12 @@ WebPage are skipped, so they can never collide with the Yoast graph.
 
 = Which post types =
 
-By default the field and output apply to every public post type except Pages and
-attachments (so articles, treatments, doctors, and any other public CPT are covered).
-Narrow the list to specific slugs with the `insight_levinger_video_schema_post_types`
-filter, e.g.:
+The field and output apply to these post types: posts, pages, and the `procedure`,
+`medical-center`, `movie`, `doctor`, and `sector` custom post types. Add or remove
+slugs with the `insight_levinger_video_schema_post_types` filter, e.g.:
 
     add_filter( 'insight_levinger_video_schema_post_types', function () {
-        return array( 'post', 'treatment', 'doctor' );
+        return array( 'post', 'page', 'procedure', 'medical-center', 'movie', 'doctor', 'sector' );
     } );
 
 = Requirements =
@@ -38,6 +37,10 @@ filter, e.g.:
   appears if ACF is missing. (Repeater is included in ACF 6.3+ free, or any ACF Pro.)
 
 == Changelog ==
+
+= 1.1.0 =
+* Scope the field/output to an explicit post-type list: posts, pages, and the procedure,
+  medical-center, movie, doctor, and sector CPTs (still filterable).
 
 = 1.0.0 =
 * Initial release: per-post VideoObject JSON-LD output in the head, ACF repeater storage,
