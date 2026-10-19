@@ -3,7 +3,7 @@
  * Plugin Name: Insight - Levinger - Video Schema
  * Plugin URI: https://github.com/udiinsight/insight-levinger-video-schema
  * Description: Outputs consultant-supplied VideoObject JSON-LD (stored per post in an ACF repeater) in the document head, alongside Yoast SEO.
- * Version: 1.1.0
+ * Version: 1.1.1
  * Author: Insight Marketing
  * Author URI: https://insight-marketing.co.il
  * Text Domain: insight-levinger-video-schema
@@ -18,7 +18,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'INSIGHT_LEVINGER_VIDEO_SCHEMA_VERSION', '1.1.0' );
+define( 'INSIGHT_LEVINGER_VIDEO_SCHEMA_VERSION', '1.1.1' );
 define( 'INSIGHT_LEVINGER_VIDEO_SCHEMA_PATH', plugin_dir_path( __FILE__ ) );
 define( 'INSIGHT_LEVINGER_VIDEO_SCHEMA_URL', plugin_dir_url( __FILE__ ) );
 
@@ -150,6 +150,43 @@ function insight_levinger_video_schema_is_blocked( $data ) {
 }
 
 /**
+ * Normalise pasted JSON-LD before decoding.
+ *
+ * Text copied from Google Docs or Word often carries non-breaking spaces in the
+ * indentation, a BOM, or zero-width / direction marks, which json_decode rejects.
+ * NBSP becomes a plain space; the BOM and U+200B to U+200F are removed.
+ *
+ * @param string $json Raw textarea value.
+ * @return string Cleaned string.
+ */
+function insight_levinger_video_schema_normalize( $json ) {
+	$json = str_replace( "\xC2\xA0", ' ', (string) $json );
+	$json = str_replace(
+		array( "\xEF\xBB\xBF", "\xE2\x80\x8B", "\xE2\x80\x8C", "\xE2\x80\x8D", "\xE2\x80\x8E", "\xE2\x80\x8F" ),
+		'',
+		$json
+	);
+
+	return trim( $json );
+}
+
+/**
+ * Decode one stored JSON-LD block.
+ *
+ * @param string $json Raw textarea value.
+ * @return array|null Decoded block, or null when the JSON is invalid or not an object/array.
+ */
+function insight_levinger_video_schema_decode( $json ) {
+	$data = json_decode( insight_levinger_video_schema_normalize( $json ), true );
+
+	if ( JSON_ERROR_NONE !== json_last_error() || ! is_array( $data ) ) {
+		return null;
+	}
+
+	return $data;
+}
+
+/**
  * Print the stored VideoObject JSON-LD blocks in the document head.
  *
  * @return void
@@ -174,9 +211,9 @@ function insight_levinger_video_schema_output() {
 			continue;
 		}
 
-		$data = json_decode( (string) $row['schema_json'], true );
+		$data = insight_levinger_video_schema_decode( $row['schema_json'] );
 
-		if ( JSON_ERROR_NONE !== json_last_error() ) {
+		if ( null === $data ) {
 			continue;
 		}
 
@@ -195,6 +232,32 @@ function insight_levinger_video_schema_output() {
 	}
 }
 add_action( 'wp_head', 'insight_levinger_video_schema_output' );
+
+/**
+ * Warn under a JSON-LD textarea in the editor when its stored value still fails to decode.
+ *
+ * Such a row is skipped on the front end, so without this the editor gets no signal.
+ *
+ * @param array $field ACF field being rendered.
+ * @return void
+ */
+function insight_levinger_video_schema_render_field_warning( $field ) {
+	if ( empty( $field['value'] ) || ! is_string( $field['value'] ) ) {
+		return;
+	}
+
+	if ( null !== insight_levinger_video_schema_decode( $field['value'] ) ) {
+		return;
+	}
+
+	$error = JSON_ERROR_NONE !== json_last_error() ? json_last_error_msg() : __( 'not a JSON object', 'insight-levinger-video-schema' );
+
+	echo '<p style="color:#b32d2e;font-weight:600;margin-top:6px;">';
+	/* translators: %s: JSON parser error message. */
+	echo esc_html( sprintf( __( 'This JSON-LD is invalid and is NOT printed on the page (%s). Validate it at validator.schema.org and paste it again.', 'insight-levinger-video-schema' ), $error ) );
+	echo '</p>';
+}
+add_action( 'acf/render_field/key=field_insight_levinger_video_schema_json', 'insight_levinger_video_schema_render_field_warning', 20 );
 
 /**
  * Show an admin notice when ACF is missing, since the field cannot render without it.

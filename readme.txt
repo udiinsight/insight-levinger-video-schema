@@ -4,7 +4,7 @@ Tags: schema, seo, video, json-ld, structured-data
 Requires at least: 6.0
 Tested up to: 6.7
 Requires PHP: 8.0
-Stable tag: 1.1.0
+Stable tag: 1.1.1
 License: Proprietary
 License URI: https://insight-marketing.co.il
 
@@ -37,6 +37,12 @@ slugs with the `insight_levinger_video_schema_post_types` filter, e.g.:
   appears if ACF is missing. (Repeater is included in ACF 6.3+ free, or any ACF Pro.)
 
 == Changelog ==
+
+= 1.1.1 =
+* Normalise pasted JSON-LD before decoding: non-breaking spaces become plain spaces and
+  the BOM and zero-width / direction marks (U+200B to U+200F) are removed, so blocks
+  copied from Google Docs or Word no longer fail silently.
+* Show a red warning under any row whose JSON is still invalid on the post edit screen.
 
 = 1.1.0 =
 * Scope the field/output to an explicit post-type list: posts, pages, and the procedure,
